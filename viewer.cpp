@@ -2,7 +2,6 @@
 
 #include <math.h>
 #include <iostream>
-#include "meshLoader.h"
 #include "grid.h"
 
 #include <QTime>
@@ -19,7 +18,7 @@ Viewer::Viewer(const QGLFormat &format)
 
   setlocale(LC_ALL,"C");
 
-  _grid = new Grid();
+  _grid = new Grid(1024,-1.0,1.0);
   _cam  = new Camera(1024,glm::vec3(0,0,0));
 
   _timer->setInterval(10);

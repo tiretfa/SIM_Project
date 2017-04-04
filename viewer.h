@@ -22,13 +22,12 @@
 #include <stack>
 
 #include "camera.h"
-#include "meshLoader.h"
+#include "grid.h"
 #include "shader.h"
 
 class Viewer : public QGLWidget {
  public:
-  Viewer(char *filename,
-	 const QGLFormat &format=QGLFormat::defaultFormat());
+  Viewer(const QGLFormat &format=QGLFormat::defaultFormat());
   ~Viewer();
   
  protected :
@@ -57,7 +56,7 @@ class Viewer : public QGLWidget {
   QTimer        *_timer;    // timer that controls the animation
   unsigned int   _currentshader; // current shader index
 
-  Mesh   *_grid;   // the grid
+  Grid   *_grid;   // the grid
   Camera *_cam;    // the camera
 
   glm::vec3 _light; // light direction
@@ -65,11 +64,12 @@ class Viewer : public QGLWidget {
 
   Shader *_shaderFirstPass; // shader used to draw geometry in the FBO
   Shader *_shaderSecondPass; // shader used to compute lighting
+  Shader *_shader;
 
   // vao/vbo ids (1 for the object, 1 for the viewport quad)
   GLuint _vaoObject;
   GLuint _vaoQuad;
-  GLuint _buffers[5];
+  GLuint _buffers[1];
   GLuint _quad;
 
   // render texture ids 
