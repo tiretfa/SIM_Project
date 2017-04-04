@@ -41,6 +41,7 @@ class Viewer : public QGLWidget {
 
  private:
   void createVAO();
+  void loadGridIntoVAO();
   void deleteVAO();
   void drawObject(const glm::vec3 &pos,const glm::vec3 &col);
   void drawQuad();
@@ -56,7 +57,7 @@ class Viewer : public QGLWidget {
   QTimer        *_timer;    // timer that controls the animation
   unsigned int   _currentshader; // current shader index
 
-  Mesh   *_mesh;   // the mesh
+  Mesh   *_grid;   // the grid
   Camera *_cam;    // the camera
 
   glm::vec3 _light; // light direction

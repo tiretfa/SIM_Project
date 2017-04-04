@@ -3,12 +3,14 @@
 #include <math.h>
 #include <iostream>
 #include "meshLoader.h"
+#include "grid.h"
+
 #include <QTime>
 
 using namespace std;
 
 
-Viewer::Viewer(char *filename,const QGLFormat &format)
+Viewer::Viewer(const QGLFormat &format)
   : QGLWidget(format),
     _timer(new QTimer(this)),
     _currentshader(0),
@@ -17,8 +19,8 @@ Viewer::Viewer(char *filename,const QGLFormat &format)
 
   setlocale(LC_ALL,"C");
 
-  _mesh = new Mesh(filename);
-  _cam  = new Camera(_mesh->radius,glm::vec3(_mesh->center[0],_mesh->center[1],_mesh->center[2]));
+  _grid = new Grid();
+  _cam  = new Camera(1024,glm::vec3(0,0,0));
 
   _timer->setInterval(10);
   connect(_timer,SIGNAL(timeout()),this,SLOT(updateGL()));
@@ -26,7 +28,7 @@ Viewer::Viewer(char *filename,const QGLFormat &format)
 
 Viewer::~Viewer() {
   delete _timer;
-  delete _mesh;
+  delete _grid;
   delete _cam;
 
   // delete all GPU objects  
@@ -37,13 +39,13 @@ Viewer::~Viewer() {
 
 void Viewer::deleteVAO() {
   // delete VAOs
-  glDeleteBuffers(5,_buffers);
+  glDeleteBuffers(1,_buffers);
   glDeleteBuffers(1,&_quad);
 
   glDeleteVertexArrays(1,&_vaoObject);
   glDeleteVertexArrays(1,&_vaoQuad);
 }
-
+/*
 void Viewer::createFBO() {
   // Ids needed for the FBO and associated textures 
   glGenFramebuffers(1,&_fbo);
@@ -96,44 +98,46 @@ void Viewer::deleteFBO() {
   glDeleteTextures(1,&_rendColorId);
   glDeleteTextures(1,&_rendDepthId);
 }
-
+*/
 void Viewer::createVAO() {
   // create VAO
   glGenVertexArrays(1,&_vaoObject);
 
   // create 5 associated VBOs (for positions, normals, tangents, coords and face indices)
-  glGenBuffers(5,_buffers);
-
+  glGenBuffers(1,_buffers);
+}
+void Viewer::loadGridIntoVAO(){
   // bind VAO 
   glBindVertexArray(_vaoObject);
   
   // send and enable positions 
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[0]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->vertices,GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,_grid->nb_vertices*3*sizeof(float),_grid->vertices,GL_STATIC_DRAW);
   glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
   glEnableVertexAttribArray(0);
+/*
 
   // send and enable normals 
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[1]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->normals,GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,_grid->nb_vertices*3*sizeof(float),_grid->normals,GL_STATIC_DRAW);
   glVertexAttribPointer(1,3,GL_FLOAT,GL_TRUE,0,(void *)0);
   glEnableVertexAttribArray(1);
 
   // send and enable tangents
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[2]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->tangents,GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,_grid->nb_vertices*3*sizeof(float),_grid->tangents,GL_STATIC_DRAW);
   glVertexAttribPointer(2,3,GL_FLOAT,GL_TRUE,0,(void *)0);
   glEnableVertexAttribArray(2);
 
   // send and enable coords 
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[3]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*2*sizeof(float),_mesh->coords,GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,_grid->nb_vertices*2*sizeof(float),_grid->coords,GL_STATIC_DRAW);
   glVertexAttribPointer(3,2,GL_FLOAT,GL_FALSE,0,(void *)0);
   glEnableVertexAttribArray(3);
 
   // send faces 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,_buffers[4]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,_mesh->nb_faces*3*sizeof(unsigned int),_mesh->faces,GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,_grid->nb_faces*3*sizeof(unsigned int),_grid->faces,GL_STATIC_DRAW);
 
 
   // create the VAO associated with a simple quad
@@ -148,7 +152,7 @@ void Viewer::createVAO() {
   };
   
   // create VAO
-  glGenVertexArrays(1,&_vaoQuad);
+  glGenVertexArrays(1,&_vaoQuad);&_vao
   glGenBuffers(1,&_quad);
 
   // bind VAO 
@@ -159,23 +163,31 @@ void Viewer::createVAO() {
   glBufferData(GL_ARRAY_BUFFER, sizeof(quadData),quadData,GL_STATIC_DRAW);
   glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
   glEnableVertexAttribArray(0);
-
+*/
   // back to normal
   glBindVertexArray(0);
 }
 
 void Viewer::createShaders() {
+
+    _shader = new Shader();
+    _shader->load("shaders/grid_shader.vert","shaders/grid_shader.frag");
+/*
   // create 2 shaders: one for the first pass, one for the second pass 
   _shaderFirstPass = new Shader();
   _shaderSecondPass = new Shader();
 
   _shaderFirstPass->load("shaders/first-pass.vert","shaders/first-pass.frag");
   _shaderSecondPass->load("shaders/second-pass.vert","shaders/second-pass.frag");
+*/
 }
 
 void Viewer::deleteShaders() {
-  delete _shaderFirstPass;  _shaderFirstPass = NULL;
+    delete _shader;
+/*
+    delete _shaderFirstPass;  _shaderFirstPass = NULL;
   delete _shaderSecondPass; _shaderSecondPass = NULL;
+  */
 }
 
 
@@ -192,7 +204,7 @@ void Viewer::drawObject(const glm::vec3 &pos,const glm::vec3 &col) {
 
   // activate faces and draw!
   glBindVertexArray(_vaoObject);
-  glDrawElements(GL_TRIANGLES,3*_mesh->nb_faces,GL_UNSIGNED_INT,(void *)0);
+  glDrawElements(GL_TRIANGLES,3*_grid->nb_faces,GL_UNSIGNED_INT,(void *)0);
   glBindVertexArray(0);
 }
 
@@ -233,7 +245,7 @@ void Viewer::paintGL() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // draw multiple objects 
-  const float r = _mesh->radius*2.5;
+  const float r = _grid->radius*2.5;
   const int   v = 5;
   for(int i=-v;i<=v;++i) {
     for(int j=-v;j<=v;++j) {
@@ -351,7 +363,8 @@ void Viewer::initializeGL() {
 
   // init VAO
   createVAO();
-  
+  loadGridIntoVAO();
+
   // create/init FBO
   createFBO();
   initFBO();
