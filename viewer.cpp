@@ -9,25 +9,20 @@ using namespace std;
 
 Viewer::Viewer(char *filename,const QGLFormat &format)
   : QGLWidget(format),
-    _timer(new QTimer(this)),
-    _drawMode(false),
-    _var(0.0f),
-    _speed(0.1f) {
+    _drawMode(false)
+    {
 
   // load a mesh into the CPU memory
-  _mesh = new Mesh(filename);
-  
+  _grid = new Grid(1024,-1.0,1.0);
+  //_grid =new Mesh(filename);
   // create a camera (automatically modify model/view matrices according to user interactions)
-  _cam  = new Camera(_mesh->radius,glm::vec3(_mesh->center[0],_mesh->center[1],_mesh->center[2]));
+  _cam  = new Camera(3,glm::vec3(0,0,0));
 
-  _timer->setInterval(10);
-  connect(_timer,SIGNAL(timeout()),this,SLOT(updateGL()));
 }
 
 Viewer::~Viewer() {
   // delete everything 
-  delete _timer;
-  delete _mesh;
+  delete _grid;
   delete _cam;
 
   deleteVAO();
@@ -48,12 +43,12 @@ void Viewer::deleteShader() {
 void Viewer::createVAO() {
   // create some buffers inside the GPU memory
   glGenVertexArrays(1,&_vao);
-  glGenBuffers(3,_buffers);
+  glGenBuffers(2,_buffers);
 }
 
 void Viewer::deleteVAO() {
   // delete / free all GPU buffers 
-  glDeleteBuffers(3,_buffers);
+  glDeleteBuffers(2,_buffers);
   glDeleteVertexArrays(1,&_vao);
 }
 
@@ -63,20 +58,21 @@ void Viewer::loadMeshIntoVAO() {
   
   // store mesh positions into buffer 0 inside the GPU memorycreate
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[0]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->vertices,GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,_grid->nbVertices()*3*sizeof(float),_grid->vertices(),GL_STATIC_DRAW);
+  //glBufferData(GL_ARRAY_BUFFER,_grid->nb_vertices*3*sizeof(float),_grid->vertices,GL_STATIC_DRAW);
   glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
   glEnableVertexAttribArray(0);
-
+/*
   // store mesh normals into buffer 1 inside the GPU memory
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[1]);
   glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->normals,GL_STATIC_DRAW);
   glVertexAttribPointer(1,3,GL_FLOAT,GL_TRUE,0,(void *)0);
   glEnableVertexAttribArray(1);
-
+*/
   // store mesh indices into buffer 2 inside the GPU memory
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,_buffers[2]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,_mesh->nb_faces*3*sizeof(unsigned int),_mesh->faces,GL_STATIC_DRAW);
-
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,_buffers[1]);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,_grid->nbFaces()*3*sizeof(unsigned int),_grid->faces(),GL_STATIC_DRAW);
+//glBufferData(GL_ELEMENT_ARRAY_BUFFER,_grid->nb_faces*3*sizeof(unsigned int),_grid->faces,GL_STATIC_DRAW);
   // deactivate the VAO for now
   glBindVertexArray(0);
 }
@@ -84,7 +80,8 @@ void Viewer::loadMeshIntoVAO() {
 void Viewer::drawVAO() {
   // activate the VAO, draw the associated triangles and desactivate the VAO
   glBindVertexArray(_vao);
-  glDrawElements(GL_TRIANGLES,3*_mesh->nb_faces,GL_UNSIGNED_INT,(void *)0);
+  glDrawElements(GL_TRIANGLES,3*_grid->nbFaces(),GL_UNSIGNED_INT,(void *)0);
+  //glDrawElements(GL_TRIANGLES,3*_grid->nb_faces,GL_UNSIGNED_INT,(void *)0);
   glBindVertexArray(0);
 }
 
@@ -108,8 +105,7 @@ void Viewer::enableShader() {
   // send another variable color
   glUniform3f(glGetUniformLocation(_shader->id(),"myOtherColor"),1.0f,0.0f,0.0f);
 
-  // send another variable
-  glUniform1f(glGetUniformLocation(_shader->id(),"var"),_var);
+
 }
 
 void Viewer::disableShader() {
@@ -133,8 +129,6 @@ void Viewer::paintGL() {
   // tell the GPU to stop using this shader 
   disableShader();
 
-  // animate variables
-  _var += _speed;
 }
 
 void Viewer::resizeGL(int width,int height) {
@@ -177,13 +171,6 @@ void Viewer::keyPressEvent(QKeyEvent *ke) {
     _drawMode = !_drawMode;
   } 
 
-  // key a: play/stop animation
-  if(ke->key()==Qt::Key_A) {
-    if(_timer->isActive()) 
-      _timer->stop();
-    else 
-      _timer->start();
-  }
 
   // key i: init camera
   if(ke->key()==Qt::Key_I) {
@@ -223,7 +210,5 @@ void Viewer::initializeGL() {
   createVAO();
   loadMeshIntoVAO();
 
-  // starts the timer 
-  _timer->start();
 }
 

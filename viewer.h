@@ -23,12 +23,12 @@
 
 #include "camera.h"
 #include "meshLoader.h"
+#include "grid.h"
 #include "shader.h"
 
 class Viewer : public QGLWidget {
  public:
-  Viewer(char *filename,
-	 const QGLFormat &format=QGLFormat::defaultFormat());
+  Viewer(char *filename,const QGLFormat &format=QGLFormat::defaultFormat());
   ~Viewer();
 
  protected :
@@ -51,12 +51,10 @@ class Viewer : public QGLWidget {
   void enableShader();
   void disableShader();
 
-  QTimer        *_timer;    // timer that controls the animation
-  bool           _drawMode; // press w for wire or fill drawing mode
-  float          _var;      // animated variable (going into [0-1-0-1...1-0])
-  float          _speed;    // speed added to the spin at each frame
 
-  Mesh   *_mesh;   // the mesh
+  bool           _drawMode; // press w for wire or fill drawing mode
+  //Mesh  *_grid;
+  Grid  *_grid;
   Camera *_cam;    // the camera
   Shader *_shader; // the shader
 
