@@ -146,7 +146,7 @@ void Viewer::enableShader() {
 
   // compute the resulting transformation matrix
   glm::mat4 mvp = p*mv;
-
+/*
   // activate the shader 
   glUseProgram(_shader->id());
 
@@ -158,7 +158,7 @@ void Viewer::enableShader() {
 
   // send another variable color
   glUniform3f(glGetUniformLocation(_shader->id(),"myOtherColor"),1.0f,0.0f,0.0f);
-
+*/
 
 }
 
@@ -241,7 +241,7 @@ void Viewer::keyPressEvent(QKeyEvent *ke) {
   
   // key r: reload shaders 
   if(ke->key()==Qt::Key_R) {
-    _shader->reload(_vertexFilename.c_str(),_fragmentFilename.c_str());
+    //_shader->reload(_vertexFilename.c_str(),_fragmentFilename.c_str());
   }
 
   updateGL();

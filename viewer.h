@@ -46,6 +46,10 @@ class Viewer : public QGLWidget {
   void loadGridIntoVAO();
   void drawVAO();
 
+  void initFBO();
+  void createFBO();
+  void deleteFBO();
+
   void createShader();
   void deleteShader();
   void enableShader();
