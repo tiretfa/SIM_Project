@@ -168,14 +168,20 @@ void Viewer::createShaders() {
   // create 2 shaders: one for the first pass, one for the second pass 
   _shaderFirstPass = new Shader();
   _shaderSecondPass = new Shader();
+  _shaderNoise = new Shader();
 
   _shaderFirstPass->load("shaders/first-pass.vert","shaders/first-pass.frag");
   _shaderSecondPass->load("shaders/second-pass.vert","shaders/second-pass.frag");
+  _shaderNoise->load("shaders/noise.vert","shaders/noise.frag");
+  _shaderNormal->load("shaders/normal.vert","shaders/normal.frag");
+
 }
 
 void Viewer::deleteShaders() {
   delete _shaderFirstPass;  _shaderFirstPass = NULL;
   delete _shaderSecondPass; _shaderSecondPass = NULL;
+  delete _shaderNoise;      _shaderNoise = NULL;
+  delete _shaderNormal;      _shaderNormal = NULL;
 }
 
 
@@ -250,8 +256,18 @@ void Viewer::paintGL() {
   // activate the shader 
   glUseProgram(_shaderSecondPass->id());
 
+
   // Draw the triangles !
   drawQuad();
+
+  //activate shaderNoise
+  glUseProgram(_shaderNoise->id());
+  // clear everything
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  //activtae shaderNormal
+  glUseProgram(_shaderNormal->id());
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // disable shader 
   glUseProgram(0);

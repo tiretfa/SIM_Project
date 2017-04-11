@@ -64,6 +64,9 @@ class Viewer : public QGLWidget {
 
   Shader *_shaderFirstPass; // shader used to draw geometry in the FBO
   Shader *_shaderSecondPass; // shader used to compute lighting
+  Shader *_shaderNoise; //shader noise Perlin
+  Shader *_shaderNormal; //shader noise Perlin
+
 
   // vao/vbo ids (1 for the object, 1 for the viewport quad)
   GLuint _vaoObject;
