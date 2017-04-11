@@ -30,7 +30,7 @@ class Viewer : public QGLWidget {
   Viewer(char *filename,
 	 const QGLFormat &format=QGLFormat::defaultFormat());
   ~Viewer();
-  
+
  protected :
   virtual void paintGL();
   virtual void initializeGL();
@@ -38,46 +38,33 @@ class Viewer : public QGLWidget {
   virtual void keyPressEvent(QKeyEvent *ke);
   virtual void mousePressEvent(QMouseEvent *me);
   virtual void mouseMoveEvent(QMouseEvent *me);
+    
 
  private:
   void createVAO();
   void deleteVAO();
-  void drawObject(const glm::vec3 &pos,const glm::vec3 &col);
-  void drawQuad();
+  void loadMeshIntoVAO();
+  void drawVAO();
 
-  void createShaders();
-  void deleteShaders();
+  void createShader();
+  void deleteShader();
+  void enableShader();
   void disableShader();
 
-  void createFBO();
-  void deleteFBO();
-  void initFBO();
-
   QTimer        *_timer;    // timer that controls the animation
-  unsigned int   _currentshader; // current shader index
+  bool           _drawMode; // press w for wire or fill drawing mode
+  float          _var;      // animated variable (going into [0-1-0-1...1-0])
+  float          _speed;    // speed added to the spin at each frame
 
   Mesh   *_mesh;   // the mesh
   Camera *_cam;    // the camera
+  Shader *_shader; // the shader
 
-  glm::vec3 _light; // light direction
-  bool      _mode;  // camera motion or light motion
+  std::string _vertexFilename;
+  std::string _fragmentFilename;
 
-  Shader *_shaderFirstPass; // shader used to draw geometry in the FBO
-  Shader *_shaderSecondPass; // shader used to compute lighting
-
-  // vao/vbo ids (1 for the object, 1 for the viewport quad)
-  GLuint _vaoObject;
-  GLuint _vaoQuad;
-  GLuint _buffers[5];
-  GLuint _quad;
-
-  // render texture ids 
-  GLuint _rendNormalId;
-  GLuint _rendColorId;
-  GLuint _rendDepthId;
-
-  // fbo id
-  GLuint _fbo;
+  GLuint _vao;
+  GLuint _buffers[3];
 };
 
 #endif // VIEWER_H
