@@ -28,7 +28,7 @@
 
 class Viewer : public QGLWidget {
  public:
-  Viewer(char *filename,const QGLFormat &format=QGLFormat::defaultFormat());
+  Viewer(const QGLFormat &format=QGLFormat::defaultFormat());
   ~Viewer();
 
  protected :
@@ -43,7 +43,7 @@ class Viewer : public QGLWidget {
  private:
   void createVAO();
   void deleteVAO();
-  void loadMeshIntoVAO();
+  void loadGridIntoVAO();
   void drawVAO();
 
   void createShader();
@@ -56,13 +56,23 @@ class Viewer : public QGLWidget {
   //Mesh  *_grid;
   Grid  *_grid;
   Camera *_cam;    // the camera
-  Shader *_shader; // the shader
+  Shader *_shaderPerlinNoisePass; // the shader
+  Shader *_shaderNormalPass;
 
   std::string _vertexFilename;
   std::string _fragmentFilename;
 
   GLuint _vao;
   GLuint _buffers[3];
+
+  //render texture ids
+  GLuint _rendPerlinId;
+  GLuint _rendNormalId;
+  GLuint _rendDepthId;
+
+  // fbo id
+  GLuint _fbo;
+
 };
 
 #endif // VIEWER_H
