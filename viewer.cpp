@@ -14,8 +14,7 @@ Viewer::Viewer(const QGLFormat &format)
 
   // load a mesh into the CPU memory
   _grid = new Grid(1024,-1.0,1.0);
-  //_grid =new Mesh(filename);
-  // create a camera (automatically modify model/view matrices according to user interactions)
+
   _cam  = new Camera(3,glm::vec3(0,0,0));
 
 }
@@ -25,6 +24,7 @@ Viewer::~Viewer() {
   delete _grid;
   delete _cam;
 
+  deleteFBO();
   deleteVAO();
   deleteShader();
 }
@@ -44,28 +44,51 @@ void Viewer::deleteShader() {
 }
 
 void Viewer::createVAO() {
-  // create some buffers inside the GPU memory
-  glGenVertexArrays(1,&_vao);
-  glGenBuffers(2,_buffers);
+
+
+  const GLfloat quadData[] = {
+    -1.0f,-1.0f,0.0f, 1.0f,-1.0f,0.0f, -1.0f,1.0f,0.0f, -1.0f,1.0f,0.0f, 1.0f,-1.0f,0.0f, 1.0f,1.0f,0.0f };
+
+  glGenBuffers(2,_terrain);
+  glGenBuffers(1,&_quad);
+  glGenVertexArrays(1,&_vaoTerrain);
+  glGenVertexArrays(1,&_vaoQuad);
+
+  // create the VBO associated with the grid (the terrain)
+  glBindVertexArray(_vaoTerrain);
+  glBindBuffer(GL_ARRAY_BUFFER,_terrain[0]); // vertices
+  glBufferData(GL_ARRAY_BUFFER,_grid->nbVertices()*3*sizeof(float),_grid->vertices(),GL_STATIC_DRAW);
+  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,_terrain[1]); // indices
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,_grid->nbFaces()*3*sizeof(int),_grid->faces(),GL_STATIC_DRAW);
+
+  // create the VBO associated with the screen quad
+  glBindVertexArray(_vaoQuad);
+  glBindBuffer(GL_ARRAY_BUFFER,_quad); // vertices
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadData),quadData,GL_STATIC_DRAW);
+  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
+  glEnableVertexAttribArray(0);
 }
 
 void Viewer::deleteVAO() {
-  // delete / free all GPU buffers 
-  glDeleteBuffers(2,_buffers);
-  glDeleteVertexArrays(1,&_vao);
+  glDeleteBuffers(2,_terrain);
+  glDeleteBuffers(1,&_quad);
+  glDeleteVertexArrays(1,&_vaoTerrain);
+  glDeleteVertexArrays(1,&_vaoQuad);
 }
-
 void Viewer::createFBO() {
   // Ids needed for the FBO and associated textures
   glGenFramebuffers(1,&_fbo);
   glGenTextures(1,&_rendPerlinId);
   glGenTextures(1,&_rendNormalId);
+  glGenTextures(1,&_rendDepthId);
 
 }
 
 void Viewer::initFBO() {
 
- // create the texture for rendering colors
+ // create the texture for rendering perlin
   glBindTexture(GL_TEXTURE_2D,_rendPerlinId);
   glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA32F,width(),height(),0,GL_RGBA,GL_FLOAT,NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -94,9 +117,12 @@ void Viewer::initFBO() {
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,_rendPerlinId,0);
   glBindTexture(GL_TEXTURE_2D,_rendNormalId);
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D,_rendNormalId,0);
-  glBindFramebuffer(GL_FRAMEBUFFER,0);
   glBindTexture(GL_TEXTURE_2D,_rendDepthId);
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,_rendDepthId,0);
+  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+      std::cout << "Le fbo est cassé, aled" << std::endl;
+  }
+
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
 }
@@ -111,7 +137,7 @@ void Viewer::deleteFBO() {
 
 void Viewer::loadGridIntoVAO() {
   // activate VAO
-  glBindVertexArray(_vao);
+  glBindVertexArray(_vaoTerrain);
   
   // store mesh positions into buffer 0 inside the GPU memorycreate
   glBindBuffer(GL_ARRAY_BUFFER,_buffers[0]);
@@ -134,9 +160,17 @@ void Viewer::loadGridIntoVAO() {
 
 void Viewer::drawVAO() {
   // activate the VAO, draw the associated triangles and desactivate the VAO
-  glBindVertexArray(_vao);
+  glBindVertexArray(_vaoTerrain);
   glDrawElements(GL_TRIANGLES,3*_grid->nbFaces(),GL_UNSIGNED_INT,(void *)0);
   glBindVertexArray(0);
+}
+
+void Viewer::drawQuad(){
+
+    // Draw the 2 triangles !
+    glBindVertexArray(_vaoQuad);
+    glDrawArrays(GL_TRIANGLES,0,6);
+    glBindVertexArray(0);
 }
 
 void Viewer::enableShader() {
@@ -146,7 +180,7 @@ void Viewer::enableShader() {
 
   // compute the resulting transformation matrix
   glm::mat4 mvp = p*mv;
-/*
+/*_shaderNormalPass
   // activate the shader 
   glUseProgram(_shader->id());
 
@@ -168,28 +202,31 @@ void Viewer::disableShader() {
 }
 
 void Viewer::paintGL() {
+  glViewport(0,0,width(),height());
+
   glBindFramebuffer(GL_FRAMEBUFFER,_fbo);
 
-  glUseProgram(_shaderPerlinNoisePass->id());
+  GLenum bufferlist [] = {GL_COLOR_ATTACHMENT0};
 
-  glDrawBuffer(GL_COLOR_ATTACHMENT0);
+  glDrawBuffers(1,bufferlist);
 
-    // clear the color and depth buffers
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glUseProgram(_shaderPerlinNoisePass->id());
+  drawQuad();
 
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-  // set viewport
-  glViewport(0,0,width(),height());
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // tell the GPU to use this specified shader and send custom variables (matrices and others)
-  enableShader();
-  
-  // actually draw the scene 
-  drawVAO();
+  glUseProgram(_shaderNormalPass->id());
 
-  // tell the GPU to stop using this shader 
-  disableShader();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D,_rendPerlinId);
+  glUniform1i(glGetUniformLocation(_shaderNormalPass->id(),"heightmap"),0);
+
+  drawQuad();
+  glUseProgram(0);
+  //disableShader();
 
 }
 
@@ -266,11 +303,16 @@ void Viewer::initializeGL() {
   // initialize camera
   _cam->initialize(width(),height(),true);
 
-  // create and initialize shaders and VAO 
-  
+  createFBO();
+  initFBO();
+
   createShader();
   createVAO();
-  loadGridIntoVAO();
+
+
+
+
+  //loadGridIntoVAO();
 
 }
 

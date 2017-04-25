@@ -54,6 +54,7 @@ class Viewer : public QGLWidget {
   void deleteShader();
   void enableShader();
   void disableShader();
+  void drawQuad();
 
 
   bool           _drawMode; // press w for wire or fill drawing mode
@@ -73,6 +74,12 @@ class Viewer : public QGLWidget {
   GLuint _rendPerlinId;
   GLuint _rendNormalId;
   GLuint _rendDepthId;
+
+  //vao
+  GLuint _vaoTerrain;
+  GLuint _vaoQuad;
+  GLuint _terrain[2];
+  GLuint _quad;
 
   // fbo id
   GLuint _fbo;
