@@ -16,7 +16,7 @@ Viewer::Viewer(const QGLFormat &format)
   _grid = new Grid(1024,-1.0,1.0);
 
   _cam  = new Camera(3,glm::vec3(0,0,0));
-
+  _deplacement;
 }
 
 Viewer::~Viewer() {
@@ -147,17 +147,11 @@ void Viewer::loadGridIntoVAO() {
   glBufferData(GL_ARRAY_BUFFER,_grid->nbVertices()*3*sizeof(float),_grid->vertices(),GL_STATIC_DRAW);
   glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void *)0);
   glEnableVertexAttribArray(0);
-/*
-  // store mesh normals into buffer 1 inside the GPU memory
-  glBindBuffer(GL_ARRAY_BUFFER,_buffers[1]);
-  glBufferData(GL_ARRAY_BUFFER,_mesh->nb_vertices*3*sizeof(float),_mesh->normals,GL_STATIC_DRAW);
-  glVertexAttribPointer(1,3,GL_FLOAT,GL_TRUE,0,(void *)0);
-  glEnableVertexAttribArray(1);
-*/
+
   // store mesh indices into buffer 2 inside the GPU memory
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,_buffers[1]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,_grid->nbFaces()*3*sizeof(unsigned int),_grid->faces(),GL_STATIC_DRAW);
-  // deactivate the VAO for now
+
   glBindVertexArray(0);
 }
 
@@ -191,6 +185,8 @@ void Viewer::enableShader() {
   // send the transformation matrix
   glUniformMatrix4fv(glGetUniformLocation(_shaderGridPass->id(),"mvp"),1,GL_FALSE,&(mvp[0][0]));
 
+
+
 }
 
 void Viewer::disableShader() {
@@ -209,6 +205,7 @@ void Viewer::paintGL() {
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glUseProgram(_shaderPerlinNoisePass->id());
+  glUniform2f(glGetUniformLocation(_shaderPerlinNoisePass->id(),"deplacement"),_deplacement.x,_deplacement.y);
   drawQuad();
 
   glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -262,7 +259,6 @@ void Viewer::mousePressEvent(QMouseEvent *me) {
   } else if(me->button()==Qt::MidButton) {
     _cam->initMoveZ(p);
   }
-
   updateGL();
 }
 
@@ -284,7 +280,15 @@ void Viewer::keyPressEvent(QKeyEvent *ke) {
       glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
     
     _drawMode = !_drawMode;
-  } 
+  }  else if(ke->key()==Qt::Key_Q){
+      _deplacement.x += 0.005 ;
+  }else if(ke->key()==Qt::Key_D){
+      _deplacement.x -= 0.005;
+  }else if(ke->key()==Qt::Key_Z){
+      _deplacement.y += 0.005;
+  }else if(ke->key()==Qt::Key_S){
+      _deplacement.y -= 0.005;
+  }
 
 
   // key i: init camera

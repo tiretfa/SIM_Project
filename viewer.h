@@ -64,6 +64,7 @@ class Viewer : public QGLWidget {
   Shader *_shaderPerlinNoisePass; // the shader
   Shader *_shaderNormalPass;
   Shader *_shaderGridPass;
+  glm::vec2 _deplacement;
 
   std::string _vertexFilename;
   std::string _fragmentFilename;
