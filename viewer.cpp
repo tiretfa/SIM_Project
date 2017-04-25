@@ -9,7 +9,9 @@ using namespace std;
 
 Viewer::Viewer(const QGLFormat &format)
   : QGLWidget(format),
-    _drawMode(false)
+    _drawMode(false),
+    _light(glm::vec3(0,0,1)),
+    _mode(false)
     {
 
   // load a mesh into the CPU memory
@@ -170,23 +172,28 @@ void Viewer::drawQuad(){
     glBindVertexArray(0);
 }
 
-void Viewer::enableShader() {
-  // get the current modelview and projection matrices 
+void Viewer::enableShader(unsigned int shader) {
+
+    GLuint id = shader;
+    // get the current modelview and projection matrices
+
   glm::mat4 p  = _cam->projMatrix();
   glm::mat4 mv  = _cam->mdvMatrix();
 
   // compute the resulting transformation matrix
   glm::mat4 mvp = p*mv;
-/*_shaderNormalPass
-  // activate the shader 
-  */
+
   glUseProgram(_shaderGridPass->id());
 
   // send the transformation matrix
-  glUniformMatrix4fv(glGetUniformLocation(_shaderGridPass->id(),"mvp"),1,GL_FALSE,&(mvp[0][0]));
+  glUniformMatrix4fv(glGetUniformLocation(id,"mvp"),1,GL_FALSE,&(mvp[0][0]));
 
+  glUniform3f(glGetUniformLocation(id,"light"),_light.x, _light.y, _light.z);
 
-
+  // send the normal matrix (top-left 3x3 transpose(inverse(MDV)))
+  glUniformMatrix3fv(glGetUniformLocation(id,"normalMat"),1,GL_FALSE,&(_cam->normalMatrix()[0][0]));
+  glUniformMatrix4fv(glGetUniformLocation(id,"mdvMat"),1,GL_FALSE,&(_cam->mdvMatrix()[0][0]));
+  glUniformMatrix4fv(glGetUniformLocation(id,"projMat"),1,GL_FALSE,&(_cam->projMatrix()[0][0]));
 }
 
 void Viewer::disableShader() {
@@ -232,9 +239,9 @@ void Viewer::paintGL() {
   glBindTexture(GL_TEXTURE_2D,_rendNormalId);
   glUniform1i(glGetUniformLocation(_shaderGridPass->id(),"normalmap"),0);
 
-  enableShader();
-  drawVAO();
+  enableShader(_shaderGridPass->id());
 
+  drawVAO();
   glUseProgram(0);
 
 
@@ -249,25 +256,40 @@ void Viewer::resizeGL(int width,int height) {
 }
 
 void Viewer::mousePressEvent(QMouseEvent *me) {
-  // handle camera events
-  const glm::vec2 p((float)me->x(),(float)(height()-me->y()));
+    const glm::vec2 p((float)me->x(),(float)(height()-me->y()));
 
-  if(me->button()==Qt::LeftButton) {
-    _cam->initRotation(p);
-  } else if(me->button()==Qt::RightButton) {
-    _cam->initMoveXY(p);
-  } else if(me->button()==Qt::MidButton) {
-    _cam->initMoveZ(p);
-  }
-  updateGL();
+     if(me->button()==Qt::LeftButton) {
+       _cam->initRotation(p);
+       _mode = false;
+     } else if(me->button()==Qt::MidButton) {
+       _cam->initMoveZ(p);
+       _mode = false;
+     } else if(me->button()==Qt::RightButton) {
+       _light[0] = (p[0]-(float)(width()/2))/((float)(width()/2));
+       _light[1] = (p[1]-(float)(height()/2))/((float)(height()/2));
+       _light[2] = 1.0f-std::max(fabs(_light[0]),fabs(_light[1]));
+       _light = glm::normalize(_light);
+       _mode = true;
+     }
+
+     updateGL();
 }
 
 void Viewer::mouseMoveEvent(QMouseEvent *me) {
-  // handle camera motion
-  const glm::vec2 p((float)me->x(),(float)(height()-me->y()));
- 
-  _cam->move(p);
-  updateGL();
+    const glm::vec2 p((float)me->x(),(float)(height()-me->y()));
+
+      if(_mode) {
+        // light mode
+        _light[0] = (p[0]-(float)(width()/2))/((float)(width()/2));
+        _light[1] = (p[1]-(float)(height()/2))/((float)(height()/2));
+        _light[2] = 1.0f-std::max(fabs(_light[0]),fabs(_light[1]));
+        _light = glm::normalize(_light);
+      } else {
+        // camera mode
+        _cam->move(p);
+      }
+
+      updateGL();
 }
 
 void Viewer::keyPressEvent(QKeyEvent *ke) {

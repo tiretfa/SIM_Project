@@ -10,6 +10,7 @@
 // OpenGL Mathematics
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <math.h>
@@ -47,6 +48,7 @@ class Camera {
   // access 
   inline glm::mat4 projMatrix() const {return mat4ToGlm(_matp);}
   inline glm::mat4 mdvMatrix () const {return mat4ToGlm(_matm);}
+  inline glm::mat3 normalMatrix () const {return glm::mat3(glm::inverseTranspose(mdvMatrix()));}
 
  protected:
   inline void rotate(const Vec2f &p);
