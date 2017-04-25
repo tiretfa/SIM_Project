@@ -14,7 +14,9 @@ void main() {
 
   vec4 color = texture2D(normalmap,texcoord);
 
-  bufferColor = vec4(color.xyz,1);
+  vec3 newColor = vec3(min(1-color.w+0.2,0.5),min(max(1-color.w+0.2,0.4),0.5),1-color.w+0.2);
+
+  bufferColor = vec4(newColor.xyz,1);
 
   // color modified by a global variable 
   //bufferColor = vec4(color*normal,1.0);
