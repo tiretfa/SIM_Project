@@ -32,15 +32,18 @@ Viewer::~Viewer() {
 void Viewer::createShader() {
   _shaderPerlinNoisePass = new Shader();
   _shaderNormalPass = new Shader();
+  _shaderGridPass = new Shader();
 
   _shaderPerlinNoisePass->load("shaders/noise.vert","shaders/noise.frag");
   _shaderNormalPass->load("shaders/normal.vert","shaders/normal.frag");
+  _shaderGridPass->load("shaders/grid.vert","shaders/grid.frag");
 
 }
 
 void Viewer::deleteShader() {
   delete _shaderPerlinNoisePass; _shaderPerlinNoisePass = NULL;
   delete _shaderNormalPass; _shaderNormalPass = NULL;
+  delete _shaderGridPass; _shaderGridPass = NULL;
 }
 
 void Viewer::createVAO() {
@@ -182,17 +185,11 @@ void Viewer::enableShader() {
   glm::mat4 mvp = p*mv;
 /*_shaderNormalPass
   // activate the shader 
-  glUseProgram(_shader->id());
+  */
+  glUseProgram(_shaderGridPass->id());
 
   // send the transformation matrix
-  glUniformMatrix4fv(glGetUniformLocation(_shader->id(),"mvp"),1,GL_FALSE,&(mvp[0][0]));
-
-  // send another variable color
-  glUniform3f(glGetUniformLocation(_shader->id(),"myColor"),0.0f,1.0f,0.0f);
-
-  // send another variable color
-  glUniform3f(glGetUniformLocation(_shader->id(),"myOtherColor"),1.0f,0.0f,0.0f);
-*/
+  glUniformMatrix4fv(glGetUniformLocation(_shaderGridPass->id(),"mvp"),1,GL_FALSE,&(mvp[0][0]));
 
 }
 
@@ -206,15 +203,20 @@ void Viewer::paintGL() {
 
   glBindFramebuffer(GL_FRAMEBUFFER,_fbo);
 
-  GLenum bufferlist [] = {GL_COLOR_ATTACHMENT0};
+  GLenum bufferPerlin [] = {GL_COLOR_ATTACHMENT0};
 
-  glDrawBuffers(1,bufferlist);
+  glDrawBuffers(1,bufferPerlin);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glUseProgram(_shaderPerlinNoisePass->id());
   drawQuad();
 
   glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER,_fbo);
+  GLenum bufferNormal [] = {GL_COLOR_ATTACHMENT1};
+
+  glDrawBuffers(1,bufferNormal);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -225,13 +227,27 @@ void Viewer::paintGL() {
   glUniform1i(glGetUniformLocation(_shaderNormalPass->id(),"heightmap"),0);
 
   drawQuad();
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(_shaderGridPass->id());
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D,_rendNormalId);
+  glUniform1i(glGetUniformLocation(_shaderGridPass->id(),"normalmap"),0);
+
+  enableShader();
+  drawVAO();
+
   glUseProgram(0);
-  //disableShader();
+
+
 
 }
 
 void Viewer::resizeGL(int width,int height) {
   _cam->initialize(width,height,false);
+  glViewport(0,0,width,height);
+  initFBO();
   updateGL();
 }
 
@@ -309,10 +325,6 @@ void Viewer::initializeGL() {
   createShader();
   createVAO();
 
-
-
-
-  //loadGridIntoVAO();
 
 }
 

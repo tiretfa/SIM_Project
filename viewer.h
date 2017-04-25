@@ -63,6 +63,7 @@ class Viewer : public QGLWidget {
   Camera *_cam;    // the camera
   Shader *_shaderPerlinNoisePass; // the shader
   Shader *_shaderNormalPass;
+  Shader *_shaderGridPass;
 
   std::string _vertexFilename;
   std::string _fragmentFilename;
