@@ -52,7 +52,7 @@ class Viewer : public QGLWidget {
 
   void createShader();
   void deleteShader();
-  void enableShader();
+  void enableShader(unsigned int shader);
   void disableShader();
   void drawQuad();
 
@@ -65,6 +65,8 @@ class Viewer : public QGLWidget {
   Shader *_shaderNormalPass;
   Shader *_shaderGridPass;
   glm::vec2 _deplacement;
+  glm::vec3 _light;
+  bool      _mode;
 
   std::string _vertexFilename;
   std::string _fragmentFilename;
