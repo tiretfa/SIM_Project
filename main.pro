@@ -2,7 +2,7 @@
 GLM_PATH  = ../../ext/glm-0.9.4.1
 
 TEMPLATE  = app
-TARGET    = tp03
+TARGET    = projet
 
 #LIBS     += -Wl,-rpath $${GLEW_PATH}/lib -L$${GLEW_PATH}/lib
 LIBS     += -lGLEW -lGL -lGLU -lm

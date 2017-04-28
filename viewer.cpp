@@ -10,6 +10,7 @@ using namespace std;
 Viewer::Viewer(const QGLFormat &format)
   : QGLWidget(format),
     _drawMode(false),
+     _deplacement(0,0),
     _light(glm::vec3(0,0,1)),
     _mode(false)
     {
@@ -17,8 +18,8 @@ Viewer::Viewer(const QGLFormat &format)
   // load a mesh into the CPU memory
   _grid = new Grid(1024,-1.0,1.0);
 
-  _cam  = new Camera(3,glm::vec3(0,0,0));
-  _deplacement;
+  _cam  = new Camera(0.5,glm::vec3(0,0,0));
+
 }
 
 Viewer::~Viewer() {
@@ -124,10 +125,6 @@ void Viewer::initFBO() {
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D,_rendNormalId,0);
   glBindTexture(GL_TEXTURE_2D,_rendDepthId);
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,_rendDepthId,0);
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
-      std::cout << "Le fbo est cassé, aled" << std::endl;
-  }
-
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
 }
@@ -196,10 +193,6 @@ void Viewer::enableShader(unsigned int shader) {
   glUniformMatrix4fv(glGetUniformLocation(id,"projMat"),1,GL_FALSE,&(_cam->projMatrix()[0][0]));
 }
 
-void Viewer::disableShader() {
-  // desactivate all shaders 
-  glUseProgram(0);
-}
 
 void Viewer::paintGL() {
   glViewport(0,0,width(),height());

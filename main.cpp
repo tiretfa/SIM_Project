@@ -8,14 +8,6 @@
 
 using namespace std;
 
-char *getFilename(int argc,char **argv) {
-  if(argc<2) {
-    cout << "Usage: " << argv[0] << " offFile" << endl;
-    exit(0);
-  }
-
-  return argv[1];
-}
 
 int main(int argc,char** argv) {
   QApplication application(argc,argv);
@@ -27,7 +19,7 @@ int main(int argc,char** argv) {
 
   Viewer viewer(fmt);
 
-  viewer.setWindowTitle("Exercice 03 - Pipeline");
+  viewer.setWindowTitle("Projet Montagne");
   viewer.show();
   
   return application.exec();
